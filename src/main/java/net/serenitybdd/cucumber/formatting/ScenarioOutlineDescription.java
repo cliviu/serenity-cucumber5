@@ -1,25 +1,29 @@
 package net.serenitybdd.cucumber.formatting;
 
-import io.cucumber.core.internal.gherkin.ast.ScenarioDefinition;
-import io.cucumber.core.internal.gherkin.ast.Step;
-import io.cucumber.core.internal.gherkin.ast.TableCell;
-import io.cucumber.core.internal.gherkin.ast.TableRow;
+
+import io.cucumber.messages.Messages;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Step;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Step.DataTable;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.TableRow;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.TableRow.TableCell;
+
 
 import java.util.stream.Collectors;
 
 public class ScenarioOutlineDescription {
-    private final ScenarioDefinition scenario;
+    private final Scenario scenario;
 
-    public ScenarioOutlineDescription(ScenarioDefinition scenario) {
+    public ScenarioOutlineDescription(Scenario scenario) {
         this.scenario = scenario;
     }
 
-    public static ScenarioOutlineDescription from(ScenarioDefinition scenario) {
+    public static ScenarioOutlineDescription from(Scenario scenario) {
         return new ScenarioOutlineDescription(scenario);
     }
 
     public String getDescription() {
-        return scenario.getSteps().stream().map(
+        return scenario.getStepsList().stream().map(
                 step -> stepToString(step)
         ).collect(Collectors.joining(System.lineSeparator()));
     }
@@ -27,12 +31,13 @@ public class ScenarioOutlineDescription {
     private String stepToString(Step step) {
         String phrase = step.getKeyword() + step.getText();
 
-        if ((step.getArgument() != null) && (step.getArgument().getClass().isAssignableFrom(io.cucumber.core.internal.gherkin.ast.DataTable.class))) {
-            io.cucumber.core.internal.gherkin.ast.DataTable table = (io.cucumber.core.internal.gherkin.ast.DataTable) step.getArgument();
+
+        if (step.hasDataTable()) {
+            DataTable table = step.getDataTable();
             String tableAsString = "";
-            for (TableRow row : table.getRows()) {
+            for (TableRow row : table.getRowsList()) {
                 tableAsString += "|";
-                tableAsString += row.getCells().stream()
+                tableAsString += row.getCellsList().stream()
                         .map(TableCell::getValue)
                         .collect(Collectors.joining(" | "));
                 tableAsString += "|" + System.lineSeparator();

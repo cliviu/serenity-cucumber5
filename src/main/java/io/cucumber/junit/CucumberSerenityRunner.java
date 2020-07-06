@@ -16,6 +16,7 @@ import io.cucumber.plugin.Plugin;
 import io.cucumber.plugin.event.TestRunFinished;
 import io.cucumber.plugin.event.TestRunStarted;
 import io.cucumber.plugin.event.TestSourceRead;
+import io.cucumber.tagexpressions.Expression;
 import net.serenitybdd.cucumber.suiteslicing.CucumberSuiteSlicer;
 import net.serenitybdd.cucumber.suiteslicing.ScenarioFilter;
 import net.serenitybdd.cucumber.suiteslicing.TestStatistics;
@@ -93,17 +94,19 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
                 .addDefaultSummaryPrinterIfAbsent()
                 .build(environmentOptions);
 
-        if (!runtimeOptions.isStrict()) {
+        /*if (!runtimeOptions.isStrict()) {
             LOGGER.warn("By default Cucumber is running in --non-strict mode.\n" +
                     "This default will change to --strict and --non-strict will be removed.\n" +
                     "You can use --strict or @CucumberOptions(strict = true) to suppress this warning"
             );
-        }
+        }*/
 
         RuntimeOptionsBuilder runtimeOptionsBuilder =  new RuntimeOptionsBuilder();
         Collection<String> tagFilters = environmentSpecifiedTags(runtimeOptions.getTagExpressions());
         for(String tagFilter : tagFilters ) {
-            runtimeOptionsBuilder.addTagFilter(tagFilter);
+            //TODO check if right
+            runtimeOptionsBuilder.addTagFilter(new LiteralExpression(tagFilter));
+            //runtimeOptionsBuilder.addTagFilter(tagFilter);
         }
         runtimeOptionsBuilder.build(runtimeOptions);
 
@@ -122,7 +125,7 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
 
         JUnitOptions junitOptions = new JUnitOptionsParser()
                 .parse(CucumberProperties.fromSystemProperties())
-                .setStrict(runtimeOptions.isStrict())
+                //.setStrict(runtimeOptions.isStrict())
                 .build(junitEnvironmentOptions);
 
         this.bus = new TimeServiceEventBus(Clock.systemUTC(), UUID::randomUUID);
@@ -187,7 +190,9 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
         RuntimeOptionsBuilder runtimeOptionsBuilder = new RuntimeOptionsBuilder();
         Collection<String> allTagFilters = environmentSpecifiedTags(runtimeOptions.getTagExpressions());
         for(String tagFilter :  allTagFilters) {
-            runtimeOptionsBuilder.addTagFilter(tagFilter);
+            //TODO check if ok
+            //runtimeOptionsBuilder.addTagFilter(tagFilter);
+            runtimeOptionsBuilder.addTagFilter(new LiteralExpression(tagFilter));
         }
         runtimeOptionsBuilder.build(runtimeOptions);
         setRuntimeOptions(runtimeOptions);
@@ -270,7 +275,7 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
         try {
             EnvironmentVariables environmentVariables = Injectors.getInjector().getInstance(EnvironmentVariables.class);
             RuntimeOptions runtimeOptions = currentRuntimeOptions();
-            List<String> tagFilters = runtimeOptions.getTagExpressions();
+            List<Expression> tagFilters = runtimeOptions.getTagExpressions();
             List<URI> featurePaths = runtimeOptions.getFeaturePaths();
             int batchNumber = environmentVariables.getPropertyAsInteger(SERENITY_BATCH_NUMBER, 1);
             int batchCount = environmentVariables.getPropertyAsInteger(SERENITY_BATCH_COUNT, 1);

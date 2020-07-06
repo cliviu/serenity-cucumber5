@@ -1,7 +1,8 @@
 package io.cucumber.core.plugin;
 
-import io.cucumber.core.internal.gherkin.ast.Examples;
-import io.cucumber.core.internal.gherkin.ast.TableRow;
+
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario.Examples;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.TableRow;
 import net.serenitybdd.cucumber.CucumberWithSerenity;
 
 import java.net.URI;
@@ -49,7 +50,7 @@ public class LineFilters {
         if (lineFiltersContainFeaturePath(featurePath)) {
             Optional<URI> uriForFeaturePath = getURIForFeaturePath(featurePath);
             return uriForFeaturePath.filter(
-                    uri -> examples.getTableBody().stream()
+                    uri -> examples.getTableBodyList().stream()
                             .anyMatch(
                                     row -> lineFilters.get(uri).contains(row.getLocation().getLine()))
             ).isPresent();

@@ -37,7 +37,7 @@ public class CucumberWithSerenityRuntimeMain {
      */
     public static byte run(String[] argv, Supplier<ClassLoader> classLoaderSupplier) throws IOException {
         
-        RuntimeOptions  runtimeOptions = new CommandlineOptionsParser().parse(argv).build() ;
+        RuntimeOptions  runtimeOptions = new CommandlineOptionsParser(System.out).parse(argv).build() ;
 
         //ResourceLoader resourceLoader = new MultiLoader(classLoader);
         Configuration systemConfiguration = Injectors.getInjector().getInstance(Configuration.class);

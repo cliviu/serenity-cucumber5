@@ -3,11 +3,16 @@ package net.serenitybdd.cucumber.suiteslicing;
 import com.google.common.collect.FluentIterable;
 import io.cucumber.core.feature.FeatureParser;
 import io.cucumber.core.feature.Options;
-import io.cucumber.core.internal.gherkin.AstBuilder;
-import io.cucumber.core.internal.gherkin.Parser;
-import io.cucumber.core.internal.gherkin.TokenMatcher;
-import io.cucumber.core.internal.gherkin.ast.*;
+import io.cucumber.core.gherkin.messages.internal.gherkin.GherkinDocumentBuilder;
+import io.cucumber.core.gherkin.messages.internal.gherkin.Parser;
+import io.cucumber.core.gherkin.messages.internal.gherkin.TokenMatcher;
 import io.cucumber.core.runtime.FeaturePathFeatureSupplier;
+import io.cucumber.messages.IdGenerator;
+import io.cucumber.messages.Messages.GherkinDocument;
+import io.cucumber.messages.Messages.GherkinDocument.Feature;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Tag;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.FeatureChild;
 import net.serenitybdd.cucumber.util.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,14 +50,14 @@ public class CucumberScenarioLoader {
     public WeightedCucumberScenarios load() {
         LOGGER.debug("Feature paths are {}", featurePaths);
         Options featureOptions = () -> featurePaths;
-        Parser<GherkinDocument> gherkinParser = new Parser<>(new AstBuilder());
+        //Parser<GherkinDocument> gherkinParser = new Parser(new AstBuilder());
+        Parser gherkinParser = new Parser(new GherkinDocumentBuilder(new IdGenerator.UUID()));
         TokenMatcher matcher = new TokenMatcher();
-
         FeaturePathFeatureSupplier supplier =
             new FeaturePathFeatureSupplier(classLoader, featureOptions, parser);
         IntStream.range(0, supplier.get().size())
             .forEach(i -> mapsForFeatures.put(
-                gherkinParser.parse(supplier.get().get(i).getSource(), matcher).getFeature(),
+                    ((GherkinDocument.Builder)gherkinParser.parse(supplier.get().get(i).getSource(), matcher)).build().getFeature(),
                 supplier.get().get(i).getUri())
             );
 
@@ -65,9 +70,10 @@ public class CucumberScenarioLoader {
     private Function<Feature, List<WeightedCucumberScenario>> getScenarios() {
         return cucumberFeature -> {
             try {
-                return (cucumberFeature == null) ? Collections.emptyList() : cucumberFeature.getChildren()
+                return (cucumberFeature == null) ? Collections.emptyList() : cucumberFeature.getChildrenList()
                     .stream()
-                    .filter(child -> asList(ScenarioOutline.class, Scenario.class).contains(child.getClass()))
+                    //.filter(child -> asList(ScenarioOutline.class, Scenario.class).contains(child.getClass()))
+                        .filter(child -> child.hasScenario()).map(FeatureChild::getScenario)
                     .map(scenarioDefinition -> new WeightedCucumberScenario(
                         PathUtils.getAsFile(mapsForFeatures.get(cucumberFeature)).getName(),
                         cucumberFeature.getName(),
@@ -82,29 +88,29 @@ public class CucumberScenarioLoader {
         };
     }
 
-    private int scenarioCountFor(ScenarioDefinition scenarioDefinition) {
-        if (scenarioDefinition instanceof ScenarioOutline) {
-            return ((ScenarioOutline) scenarioDefinition).getExamples().stream().map(examples -> examples.getTableBody().size()).mapToInt(Integer::intValue).sum();
+    private int scenarioCountFor(Scenario scenarioDefinition) {
+        if (scenarioDefinition.getExamplesCount() > 0) {
+            return (scenarioDefinition).getExamplesList().stream().map(examples -> examples.getTableBodyList().size()).mapToInt(Integer::intValue).sum();
         } else {
             return 1;
         }
     }
 
-    private Set<String> tagsFor(Feature feature, ScenarioDefinition scenarioDefinition) {
-        return FluentIterable.concat(feature.getTags(), scenarioTags(scenarioDefinition)).stream().map(Tag::getName).collect(toSet());
+    private Set<String> tagsFor(Feature feature, Scenario scenarioDefinition) {
+        return FluentIterable.concat(feature.getTagsList(), scenarioTags(scenarioDefinition)).stream().map(Feature.Tag::getName).collect(toSet());
     }
 
-    private List<Tag> scenarioTags(ScenarioDefinition scenario) {
-        if (Scenario.class.isAssignableFrom(scenario.getClass())) {
-            return ((Scenario) scenario).getTags();
+    private List<Tag> scenarioTags(Scenario scenario) {
+        if (scenario.getExamplesCount() == 0) {
+            return scenario.getTagsList();
         } else {
-            return Stream.of(((ScenarioOutline) scenario).getTags(), ((ScenarioOutline) scenario).getExamples()
-                .stream().flatMap(e -> e.getTags().stream()).collect(toList())).flatMap(Collection::stream)
+            return Stream.of(scenario.getTagsList(), scenario.getExamplesList()
+                .stream().flatMap(e -> e.getTagsList().stream()).collect(toList())).flatMap(Collection::stream)
                 .collect(Collectors.toList());
         }
     }
 
-    private BigDecimal scenarioWeightFor(Feature feature, ScenarioDefinition scenarioDefinition) {
+    private BigDecimal scenarioWeightFor(Feature feature, Scenario scenarioDefinition) {
         return statistics.scenarioWeightFor(feature.getName(), scenarioDefinition.getName());
     }
 

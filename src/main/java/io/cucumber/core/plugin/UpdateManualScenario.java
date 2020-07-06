@@ -1,6 +1,7 @@
 package io.cucumber.core.plugin;
 
-import io.cucumber.core.internal.gherkin.ast.Tag;
+
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Tag;
 import net.thucydides.core.model.TestResult;
 import net.thucydides.core.steps.BaseStepListener;
 import net.thucydides.core.util.EnvironmentVariables;

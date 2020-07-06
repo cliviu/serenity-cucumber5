@@ -1,7 +1,8 @@
 package io.cucumber.core.plugin;
 
 
-import io.cucumber.core.internal.gherkin.ast.Tag;
+
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Tag;
 import net.thucydides.core.util.EnvironmentVariables;
 import org.eclipse.jetty.util.StringUtil;
 import org.jetbrains.annotations.NotNull;

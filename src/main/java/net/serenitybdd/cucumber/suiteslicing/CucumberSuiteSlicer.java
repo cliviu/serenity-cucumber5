@@ -1,5 +1,6 @@
 package net.serenitybdd.cucumber.suiteslicing;
 
+import io.cucumber.tagexpressions.Expression;
 import net.serenitybdd.cucumber.util.TagParser;
 
 import java.net.URI;
@@ -18,14 +19,15 @@ public class CucumberSuiteSlicer {
         this.statistics = statistics;
     }
 
-    public WeightedCucumberScenarios scenarios(int batchNumber, int batchCount, int forkNumber, int forkCount, List<String> tagFilters) {
+    public WeightedCucumberScenarios scenarios(int batchNumber, int batchCount, int forkNumber, int forkCount, List<Expression> tagFilters) {
         return new CucumberScenarioLoader(featurePaths, statistics).load()
-            .filter(forSuppliedTags(tagFilters))
+            //.filter(forSuppliedTags(tagFilters))
             .slice(batchNumber).of(batchCount).slice(forkNumber).of(forkCount);
     }
 
-    private Predicate<WeightedCucumberScenario> forSuppliedTags(List<String> tagFilters) {
+    //TODO
+    /*private Predicate<WeightedCucumberScenario> forSuppliedTags(List<Expression> tagFilters) {
         return cucumberScenario -> TagParser.parseFromTagFilters(tagFilters).evaluate(newArrayList(cucumberScenario.tags));
-    }
+    }*/
 
 }

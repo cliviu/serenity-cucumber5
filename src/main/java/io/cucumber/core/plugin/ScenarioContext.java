@@ -1,6 +1,10 @@
 package io.cucumber.core.plugin;
 
-import io.cucumber.core.internal.gherkin.ast.*;
+
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario.Examples;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Step;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Tag;
 import io.cucumber.plugin.event.TestStep;
 import net.thucydides.core.model.DataTable;
 import net.thucydides.core.model.DataTableRow;
@@ -14,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.toList;
 
-//import io.cucumber.plugin.event.Step;
+
 
 class ScenarioContext {
     private final Queue<Step> stepQueue = new LinkedList<>();
@@ -36,7 +40,7 @@ class ScenarioContext {
 
     String currentScenarioId;
 
-    ScenarioDefinition currentScenarioDefinition;
+    Scenario currentScenarioDefinition;
 
     String currentScenario;
 
@@ -50,8 +54,8 @@ class ScenarioContext {
         currentFeaturePath = featurePath;
     }
 
-    public ScenarioOutline currentScenarioOutline() {
-        return (ScenarioOutline) currentScenarioDefinition;
+    public Scenario currentScenarioOutline() {
+        return  currentScenarioDefinition;
     }
 
     public URI currentFeaturePath() {
@@ -90,7 +94,7 @@ class ScenarioContext {
         return currentScenarioId;
     }
 
-    public ScenarioDefinition getCurrentScenarioDefinition() {
+    public Scenario getCurrentScenarioDefinition() {
         return currentScenarioDefinition;
     }
 
@@ -119,7 +123,7 @@ class ScenarioContext {
     }
 
     public boolean isAScenarioOutline() {
-        return currentScenarioDefinition instanceof ScenarioOutline;
+        return currentScenarioDefinition.getExamplesCount() > 0;
     }
 
     public void startNewExample() {
@@ -132,13 +136,14 @@ class ScenarioContext {
     }
 
     public List<Tag> getScenarioTags() {
-        if (currentScenarioDefinition instanceof ScenarioOutline) {
+        return currentScenarioDefinition.getTagsList();
+        /*if (currentScenarioDefinition instanceof ScenarioOutline) {
             return ((ScenarioOutline) currentScenarioDefinition).getTags();
         } else if (currentScenarioDefinition instanceof Scenario) {
             return ((Scenario) currentScenarioDefinition).getTags();
         } else {
             return new ArrayList<>();
-        }
+        }*/
     }
 
     public String getScenarioName() {
@@ -146,7 +151,7 @@ class ScenarioContext {
     }
 
     public List<Examples> getScenarioExamples() {
-        return ((ScenarioOutline) currentScenarioDefinition).getExamples();
+        return currentScenarioDefinition.getExamplesList();
     }
 
     public void clearStepQueue() {

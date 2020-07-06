@@ -23,7 +23,7 @@ public class TagParser {
             .map(tagExpression -> tagExpression.replace("~", "not "))
             .collect(joining(") and (", "(", ")"));
 
-        return new TagExpressionParser().parse(combinedExpression);
+        return TagExpressionParser.parse(combinedExpression);
     }
 
     public static Collection<String> additionalTagsSuppliedFrom(EnvironmentVariables environmentVariables, List<String> existingTags) {

@@ -2,20 +2,26 @@ package net.serenitybdd.cucumber.suiteslicing;
 
 import io.cucumber.core.feature.FeatureParser;
 import io.cucumber.core.feature.Options;
-import io.cucumber.core.internal.gherkin.AstBuilder;
-import io.cucumber.core.internal.gherkin.Parser;
-import io.cucumber.core.internal.gherkin.TokenMatcher;
-import io.cucumber.core.internal.gherkin.ast.*;
+import io.cucumber.core.gherkin.messages.internal.gherkin.GherkinDocumentBuilder;
+import io.cucumber.core.gherkin.messages.internal.gherkin.Parser;
+import io.cucumber.core.gherkin.messages.internal.gherkin.TokenMatcher;
 import io.cucumber.core.runtime.FeaturePathFeatureSupplier;
+import io.cucumber.messages.IdGenerator;
+import io.cucumber.messages.Messages.GherkinDocument.Builder;
+import io.cucumber.messages.Messages.GherkinDocument.Feature;
+import io.cucumber.messages.Messages.GherkinDocument.Feature.Scenario;
 import net.thucydides.core.util.Inflector;
+import org.codehaus.groovy.ast.builder.AstBuilder;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -28,12 +34,20 @@ public class ScenarioLineCountStatistics implements TestStatistics {
 
     private ScenarioLineCountStatistics(List<URI> featurePaths) {
         Options featureOptions = () -> featurePaths;
-        Parser<GherkinDocument> gherkinParser = new Parser<>(new AstBuilder());
+        //Parser<GherkinDocument> gherkinParser = new Parser<>(new AstBuilder());
+
         TokenMatcher matcher = new TokenMatcher();
         FeaturePathFeatureSupplier supplier =
             new FeaturePathFeatureSupplier(classLoader, featureOptions, parser);
-
-        this.results = supplier.get().stream().map(feature -> gherkinParser.parse(feature.getSource(), matcher).getFeature())
+        List<Feature> features = new ArrayList<>();
+        List<io.cucumber.core.gherkin.Feature> gherkinFeatures = supplier.get();
+        for(io.cucumber.core.gherkin.Feature gherkinFeature  : gherkinFeatures) {
+            Parser gherkinParser = new Parser(new GherkinDocumentBuilder(new IdGenerator.UUID()));
+            Builder builder = (Builder)gherkinParser.parse(gherkinFeature.getSource(), matcher);
+            features.add(builder.build().getFeature());
+        }
+        //List<Feature> features = supplier.get().stream().map(feature -> gherkinParser.parse(feature.getSource(), matcher).getFeature()).collect(Collectors.toList());
+        this.results = features.stream()
             .map(featureToScenarios())
             .flatMap(List::stream)
             .collect(toList());
@@ -50,9 +64,10 @@ public class ScenarioLineCountStatistics implements TestStatistics {
     private Function<Feature, List<TestScenarioResult>> featureToScenarios() {
         return cucumberFeature -> {
             try {
-                return (cucumberFeature == null) ? Collections.emptyList() : cucumberFeature.getChildren()
+                return (cucumberFeature == null) ? Collections.emptyList() : cucumberFeature.getChildrenList()
                     .stream()
-                    .filter(child -> asList(ScenarioOutline.class, Scenario.class).contains(child.getClass()))
+                        .filter(child -> child.hasScenario()).map(Feature.FeatureChild::getScenario)
+                    //.filter(child -> asList(ScenarioOutline.class, Scenario.class).contains(child.getClass()))
                     .map(scenarioToResult(cucumberFeature))
                     .collect(toList());
             } catch (Exception e) {
@@ -61,7 +76,7 @@ public class ScenarioLineCountStatistics implements TestStatistics {
         };
     }
 
-    private Function<ScenarioDefinition, TestScenarioResult> scenarioToResult(Feature feature) {
+    private Function<Scenario, TestScenarioResult> scenarioToResult(Feature feature) {
         return scenarioDefinition -> {
             try {
                 return new TestScenarioResult(
@@ -74,22 +89,21 @@ public class ScenarioLineCountStatistics implements TestStatistics {
         };
     }
 
-    private BigDecimal scenarioStepCountFor(int backgroundStepCount, ScenarioDefinition scenarioDefinition) {
+    private BigDecimal scenarioStepCountFor(int backgroundStepCount, Scenario scenarioDefinition) {
         final int stepCount;
-        if (scenarioDefinition instanceof ScenarioOutline) {
-            ScenarioOutline outline = (ScenarioOutline) scenarioDefinition;
-            Integer exampleCount = outline.getExamples().stream().map(examples -> examples.getTableBody().size()).mapToInt(Integer::intValue).sum();
-            stepCount = exampleCount * (backgroundStepCount + outline.getSteps().size());
+        if (scenarioDefinition.getExamplesCount() > 0) {
+            Integer exampleCount = scenarioDefinition.getExamplesList().stream().map(examples -> examples.getTableBodyList().size()).mapToInt(Integer::intValue).sum();
+            stepCount = exampleCount * (backgroundStepCount + scenarioDefinition.getStepsCount());
         } else {
-            stepCount = backgroundStepCount + scenarioDefinition.getSteps().size();
+            stepCount = backgroundStepCount + scenarioDefinition.getStepsCount();
         }
         return BigDecimal.valueOf(stepCount);
     }
 
     private int backgroundStepCountFor(Feature feature) {
-        ScenarioDefinition scenarioDefinition = feature.getChildren().get(0);
-        if (scenarioDefinition instanceof Background) {
-            return scenarioDefinition.getSteps().size();
+        Feature.FeatureChild scenarioDefinition = feature.getChildrenList().get(0);
+        if (scenarioDefinition.hasBackground()) {
+            return scenarioDefinition.getBackground().getStepsCount();
         } else {
             return 0;
         }

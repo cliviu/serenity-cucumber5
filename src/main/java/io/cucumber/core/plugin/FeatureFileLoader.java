@@ -1,6 +1,7 @@
 package io.cucumber.core.plugin;
 
-import io.cucumber.core.internal.gherkin.ast.Feature;
+
+import io.cucumber.messages.Messages.GherkinDocument.Feature;
 import io.cucumber.plugin.event.TestSourceRead;
 import net.thucydides.core.util.Inflector;
 import org.slf4j.Logger;
@@ -45,13 +46,15 @@ public class FeatureFileLoader {
     }
 
     public Feature featureWithDefaultName(Feature feature, String defaultName) {
-        return new Feature(feature.getTags(),
+        //TODO - how to set feature name .....
+        return feature;
+        /*return new Feature(feature.getTagsList(),
                 feature.getLocation(),
                 feature.getLanguage(),
                 feature.getKeyword(),
                 defaultName,
                 feature.getDescription(),
-                feature.getChildren());
+                feature.getChildrenList());*/
     }
 
     public void addTestSourceReadEvent(TestSourceRead event) {
