@@ -46,15 +46,15 @@ public class FeatureFileLoader {
     }
 
     public Feature featureWithDefaultName(Feature feature, String defaultName) {
-        //TODO - how to set feature name .....
-        return feature;
-        /*return new Feature(feature.getTagsList(),
-                feature.getLocation(),
-                feature.getLanguage(),
-                feature.getKeyword(),
-                defaultName,
-                feature.getDescription(),
-                feature.getChildrenList());*/
+        Feature.Builder featureBuilder = feature.newBuilderForType();
+        return featureBuilder.setName(defaultName).
+                addAllTags(feature.getTagsList()).
+                setLocation(feature.getLocation()).
+                setLanguage(feature.getLanguage()).
+                setKeyword(feature.getKeyword()).
+                setDescription(feature.getDescription()).
+                addAllChildren(feature.getChildrenList()).
+                build();
     }
 
     public void addTestSourceReadEvent(TestSourceRead event) {

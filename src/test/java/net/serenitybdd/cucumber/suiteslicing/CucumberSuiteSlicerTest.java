@@ -33,8 +33,7 @@ public class CucumberSuiteSlicerTest {
             .scenario("Buying more widgets");
     }
 
-    //TODO
-   /* @Test
+    @Test
     public void shouldReturnOnlyScenariosWithSpecifiedTags() {
         assertThat(cucumberSuiteSlicer.scenarios(1, 1, 1, 1, asList("@shouldPass")).scenarios, contains(expectedScenario1));
     }
@@ -51,5 +50,5 @@ public class CucumberSuiteSlicerTest {
     @Test
     public void shouldSupportOldExclusionSyntaxInTheTagExpression() {
         assertThat(cucumberSuiteSlicer.scenarios(1, 1, 1, 1, asList("~@shouldPass")).scenarios, contains(expectedScenario2));
-    }*/
+    }
 }

@@ -94,19 +94,10 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
                 .addDefaultSummaryPrinterIfAbsent()
                 .build(environmentOptions);
 
-        /*if (!runtimeOptions.isStrict()) {
-            LOGGER.warn("By default Cucumber is running in --non-strict mode.\n" +
-                    "This default will change to --strict and --non-strict will be removed.\n" +
-                    "You can use --strict or @CucumberOptions(strict = true) to suppress this warning"
-            );
-        }*/
-
         RuntimeOptionsBuilder runtimeOptionsBuilder =  new RuntimeOptionsBuilder();
         Collection<String> tagFilters = environmentSpecifiedTags(runtimeOptions.getTagExpressions());
         for(String tagFilter : tagFilters ) {
-            //TODO check if right
             runtimeOptionsBuilder.addTagFilter(new LiteralExpression(tagFilter));
-            //runtimeOptionsBuilder.addTagFilter(tagFilter);
         }
         runtimeOptionsBuilder.build(runtimeOptions);
 
@@ -140,6 +131,8 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
 
         // Create plugins after feature parsing to avoid the creation of empty files on lexer errors.
         this.plugins = new Plugins(new PluginFactory(), runtimeOptions);
+        ExitStatus exitStatus = new ExitStatus(runtimeOptions);
+        this.plugins.addPlugin(exitStatus);
 
         Configuration systemConfiguration = Injectors.getInjector().getInstance(Configuration.class);
         SerenityReporter reporter = new SerenityReporter(systemConfiguration);
@@ -286,8 +279,9 @@ public class CucumberSerenityRunner extends ParentRunner<ParentRunner<?>> {
             } else {
                 LOGGER.info("Running slice {} of {} using fork {} of {} from feature paths {}", batchNumber, batchCount, forkNumber, forkCount, featurePaths);
 
+                List<String> tagFiltersAsString =  tagFilters.stream().map(Expression::toString).collect(toList());
                 WeightedCucumberScenarios weightedCucumberScenarios = new CucumberSuiteSlicer(featurePaths, TestStatistics.from(environmentVariables, featurePaths))
-                    .scenarios(batchNumber, batchCount, forkNumber, forkCount, tagFilters);
+                    .scenarios(batchNumber, batchCount, forkNumber, forkCount, tagFiltersAsString);
 
                 List<ParentRunner<?>> unfilteredChildren = children;
                 AtomicInteger filteredInScenarioCount = new AtomicInteger();
